@@ -35,7 +35,8 @@ class Http {
       LinkNotifier<L>? notifier,
       {GlobalKey<ScaffoldState>? globalKey,
       Function()? errorCallback,
-      readyLock = true}) async {
+      readyLock = true,
+      int timeout = 7}) async {
     if (readyLock) {
       if (notifier!.state != LinkState.ready)
         return RequestResult(false, notifier.link);
@@ -46,7 +47,7 @@ class Http {
       response = await http
           .post(Uri.parse(serverUrl),
               body: jsonEncode(notifier!.link!.getSendJSON()))
-          .timeout(Duration(seconds: 7));
+          .timeout(Duration(seconds: timeout));
     } on Exception catch (e) {
       Debug.debugging(
           "HttpPost", "http request timeout $e, by ${notifier!.link}");
@@ -124,13 +125,14 @@ class Http {
       List<File>? files}) async {
     http.StreamedResponse response;
     try {
-      MultipartRequest request = new http.MultipartRequest('POST', Uri.parse(serverUrl));
+      MultipartRequest request =
+          new http.MultipartRequest('POST', Uri.parse(serverUrl));
       request.fields[dataField] = jsonEncode(link.getSendJSON());
 
       if (files != null) {
         for (File file in files) {
-          request.files.add(
-              await http.MultipartFile.fromPath(fileFiled, file.path));
+          request.files
+              .add(await http.MultipartFile.fromPath(fileFiled, file.path));
         }
       }
 
