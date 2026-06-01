@@ -17,6 +17,13 @@ class RequestResult<T extends Link?> {
   RequestResult(this.success, this.link, {this.result = false});
 }
 
+class WebFile {
+  List<int> data;
+  String fileName;
+
+  WebFile(this.data, this.fileName);
+}
+
 class Http {
   final String serverUrl;
 
@@ -116,25 +123,21 @@ class Http {
     return RequestResult(false, link);
   }
 
-  Future<RequestResult<T>> linkPostRequestWithFile<T extends Link>(T link,
-      {GlobalKey<ScaffoldState>? globalKey,
-      Function()? errorCallback,
-      int timeout = 7,
-      String fileFiled = "files",
-      String dataField = "json",
-      List<File>? files}) async {
+  Future<RequestResult<T>> _linkPostRequestWithFile<T extends Link>(
+    T link,
+    Function(http.MultipartRequest request) appendMultipart, {
+    GlobalKey<ScaffoldState>? globalKey,
+    Function()? errorCallback,
+    int timeout = 7,
+    String dataField = "json",
+  }) async {
     http.StreamedResponse response;
     try {
       MultipartRequest request =
           new http.MultipartRequest('POST', Uri.parse(serverUrl));
       request.fields[dataField] = jsonEncode(link.getSendJSON());
 
-      if (files != null) {
-        for (File file in files) {
-          request.files
-              .add(await http.MultipartFile.fromPath(fileFiled, file.path));
-        }
-      }
+      await appendMultipart(request);
 
       response = await request.send();
     } on Exception catch (e) {
@@ -172,5 +175,45 @@ class Http {
         duration: Duration(seconds: 2),
         content: new Text("서버 연결이 원할하지 않습니다."),
       ));
+  }
+
+  Future<RequestResult<T>> linkPostRequestWithFile<T extends Link>(T link,
+      {GlobalKey<ScaffoldState>? globalKey,
+      Function()? errorCallback,
+      int timeout = 7,
+      String fileFiled = "files",
+      String dataField = "json",
+      List<File>? files}) {
+    return _linkPostRequestWithFile(link,
+        (http.MultipartRequest request) async {
+      if (files != null) {
+        for (File file in files) {
+          request.files
+              .add(await http.MultipartFile.fromPath(fileFiled, file.path));
+        }
+      }
+    },
+        dataField: dataField,
+        errorCallback: errorCallback,
+        globalKey: globalKey,
+        timeout: timeout);
+  }
+
+  Future<RequestResult<T>> linkPostRequestWithWebFile<T extends Link>(T link,
+      {GlobalKey<ScaffoldState>? globalKey,
+      Function()? errorCallback,
+      int timeout = 7,
+      String fileFiled = "files",
+      String dataField = "json",
+      List<WebFile>? files}) {
+    return _linkPostRequestWithFile(link,
+        (http.MultipartRequest request) async {
+      if (files != null) {
+        for (WebFile file in files) {
+          request.files.add(http.MultipartFile.fromBytes(fileFiled, file.data,
+              filename: file.fileName));
+        }
+      }
+    });
   }
 }
