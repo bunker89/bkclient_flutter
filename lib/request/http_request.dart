@@ -96,7 +96,7 @@ class Http {
           .post(Uri.parse(serverUrl), body: jsonEncode(link.getSendJSON()))
           .timeout(Duration(seconds: timeout));
     } on Exception catch (e) {
-      Debug.debugging("HttpPost", "http request timeout $e");
+      Debug.debugging("HttpPost", "http request timeout $e by ${link}");
       _showNetErrSnackBar(globalKey);
       if (errorCallback != null) errorCallback();
       return RequestResult(false, link);
@@ -141,7 +141,7 @@ class Http {
 
       response = await request.send();
     } on Exception catch (e) {
-      Debug.debugging("HttpPost", "http request timeout $e");
+      Debug.debugging("HttpPost", "http request timeout $e, by ${link}");
       _showNetErrSnackBar(globalKey);
       if (errorCallback != null) errorCallback();
       return RequestResult(false, link);
